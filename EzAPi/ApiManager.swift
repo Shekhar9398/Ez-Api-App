@@ -2,15 +2,16 @@ import Foundation
 
 class ApiManager: ObservableObject {
     static let shared = ApiManager()
-    
     @Published var responseString = ""
-    
     private init() {}
     
-    func builderApiCall(url: String, method: String) {
+    func apiCall(baseUrl: String, endpoint: String, method: String, headers: [String: String] = [:], body: [String: Any]? = nil, includeCredentials: Bool = false) {
         guard let request = RequestBuilder()
-            .setUrl(urlStr: url)
+            .setUrl(urlStr: baseUrl + endpoint)
             .setMethod(method: method)
+            .includeCredentials(includeCredentials)
+            .applyHeaders(headers)
+            .applyBody(body)
             .build()
         else { return }
         
@@ -22,8 +23,8 @@ class ApiManager: ObservableObject {
                     return
                 }
                 
-                if let urlResponse = response as? HTTPURLResponse {
-                    print("urlResponse: \(urlResponse)")
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("Response Status Code: \(httpResponse.statusCode)")
                 }
                 
                 if let data = data {
@@ -42,5 +43,20 @@ class ApiManager: ObservableObject {
         } else {
             return "Invalid JSON Response"
         }
+    }
+}
+
+// MARK: - RequestBuilder Extensions
+extension RequestBuilder {
+    func applyHeaders(_ headers: [String: String]) -> RequestBuilder {
+        headers.forEach { addHeader(key: $0.key, value: $0.value) }
+        return self
+    }
+    
+    func applyBody(_ body: [String: Any]?) -> RequestBuilder {
+        if let body = body {
+            setBody(body: body)
+        }
+        return self
     }
 }
